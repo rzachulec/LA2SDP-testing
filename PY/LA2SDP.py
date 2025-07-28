@@ -29,10 +29,13 @@ dataset_path = '../'
 #keep this in a list, thus can be adjusted:)
 dataset_names = ['QCdata_1', 'QCdata_2', 'QCdata_3', 'QCdata_4', 'QCdata_5', 'QCdata_6']
 
-categorical_cols = ['AUTOMATION.LEVEL.FINAL', 'TEST.AUTOMATION.LEVEL', 'TEST.OBJECT', 'PROGRAM.PHASE', 'RELEASE', 'TEST.ENTITY', 'network', 'project', 'location_raw', 'suffix']
+categorical_cols = ['AUTOMATION.LEVEL.FINAL', 'TEST.AUTOMATION.LEVEL', 'TEST.OBJECT', 'PROGRAM.PHASE', 'RELEASE', 'TEST.ENTITY',
+                    # 'ORGANIZATION'
+                    'network', 'project', 'location_raw', 'suffix'
+                    ]
 
 model_params = {
-    'iterations': 1000,
+    'iterations': 400,
     'learning_rate': 0.1,
     'depth': 6,
     'loss_function': 'Logloss',
@@ -43,7 +46,7 @@ model_params = {
 }
     
 windows = [
-    '2_3', '3_4', '4_5', '5_6',
+    '1_2', '2_3', '3_4', '4_5', '5_6',
     '1_3', '2_4', '3_5', '4_6',
     '1_4', '2_5', '3_6',
     '1_5', '2_6',
@@ -85,7 +88,7 @@ def check_backend():
 # load datasets
 def load_datasets():
     if verbosity > 0:
-        print('-' * 40)
+        print('_' * term_width)
         print('Loading datasets:')
     for dataset in dataset_names:
         if verbosity > 0:
@@ -95,13 +98,13 @@ def load_datasets():
         if verbosity > 1:
             print(data[dataset].head(), '\n')
     if verbosity > 0:
-        print('-' * 40)
+        print('_' * term_width)
     return data
 
 # preprocess datasets
 def preprocess_datasets():
     print('\n')
-    print('-' * 40)
+    print('_' * term_width)
     print('Preprocessing')
     for dataset in dataset_names:
         df = data[dataset]
@@ -131,8 +134,8 @@ def preprocess_datasets():
         df = df.drop(columns=cols_to_drop, errors='ignore')
         
         # drop columns where at least 20% of values is not NaN
-        cnt = len(df)
-        df = df.dropna(axis=1, thresh=cnt*0.2)
+        # cnt = len(df)
+        # df = df.dropna(axis=1, thresh=cnt*0.2)
         
         df[categorical_cols] = df[categorical_cols].fillna('missing')
         df['TEST.STATUS'] = df['TEST.STATUS'].replace({'Passed': 0, 'Failed': 1}).astype(int)
@@ -143,7 +146,6 @@ def preprocess_datasets():
         # drop rows witn NaN in any col
         df = df.dropna(axis=0, how='any')
         
-        
         data[dataset] = df
         if verbosity > 1:
             print(data[dataset].count(), '\n')
@@ -151,13 +153,13 @@ def preprocess_datasets():
             print(data[dataset], '\n')
         out = os.path.join(dataset_path, 'out.csv')
         data[dataset].to_csv(out)
-    print('-' * 40)
+    print('_' * term_width)
 
 # prepare dict of tasks
 def prepare_tasks():
     if verbosity > 0:
         print()
-        print('-' * 40)
+        print('_' * term_width)
         print('Preparing tasks...')
         
     for window in windows:
@@ -186,13 +188,13 @@ def prepare_tasks():
             
     if verbosity > 0:
         print(tasks.keys())
-        print('-' * 40)
+        print('_' * term_width)
 
 # train model on prepared tasks
 def train_tasks():
     if verbosity > 0:
         print()
-        print('-' * 40)
+        print('_' * term_width)
         print('Training model...')
 
     for idx, task_name in enumerate(tasks.keys()):
@@ -224,13 +226,13 @@ def train_tasks():
             print('\n')
 
     if verbosity > 0:
-        print('-' * 40)
+        print('_' * term_width)
 
 
 def feature_imp():
     if verbosity > 0:
         print()
-        print('-' * 40)
+        print('_' * term_width)
         print('Running feature importance...')
     task_df = build_window_data(data, 1, len(data))
     sss = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
@@ -258,7 +260,7 @@ def feature_imp():
     fi = explainer.model_parts(loss_function=one_minus_mcc, type='permutational')
     fig = fi.plot(show=True)
     if verbosity > 0:
-        print('-' * 40)
+        print('_' * term_width)
 
 
 # helper functions -------------------------------------------------------
@@ -330,6 +332,7 @@ def time_based_partition(len, ratio):
         train_idx (list(int)): list of training indexes
         test_idx (list(int)): list of testing indexes
     '''    
+    # if ratio < 0.5:
     ratio = 0.67
     n = len
     n_test = int((1 - ratio) * n)
@@ -418,13 +421,13 @@ def metrics(y_test, preds, task_name, model, test_pool, train_time=None, pred_ti
 
     results_df_with_avg = results_df_with_avg.round(3)
 
-    results_df_with_avg.to_csv(os.path.join(dataset_path, 'results-4.csv'), index=False)
+    results_df_with_avg.to_csv(os.path.join(dataset_path, 'results-6.csv'), index=False)
 
 
 
 def print_progress_bar(current, total, width=80):
     progress = int((current / total) * width)
-    bar = '#' * progress + '-' * (width - progress)
+    bar = '#' * progress + '_' * (width - progress)
     percent = (current / total) * 100
     sys.stdout.write(f'\r[{bar}] {percent:6.2f}%')
     sys.stdout.flush()
